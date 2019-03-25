@@ -9,6 +9,7 @@ tf.loadModel('./data/model/model.json')
         classification.offLoadingModel();
     });
 
+
 const userAgent = window.navigator.userAgent.toLowerCase();
 
 if(userAgent.indexOf('msie') != -1 || userAgent.indexOf('trident') != -1) {
@@ -18,7 +19,7 @@ if(userAgent.indexOf('msie') != -1 || userAgent.indexOf('trident') != -1) {
     } else if(userAgent.indexOf('safari') != -1　&& userAgent.indexOf('chrome') === -1) {
         alert('Safariは対応していません');
     };
-console.log(userAgent)
+
 
 const classification = new Vue({
     el: '#classification',
