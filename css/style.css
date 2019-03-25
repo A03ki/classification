@@ -1,0 +1,37 @@
+[v-cloak] {
+  display: none;
+}
+
+table {
+    width: 100%;
+}
+
+table td {
+    white-space: nowrap;
+    width: 100px;
+}
+
+#classBar {
+    margin-top : 15px;
+}
+.progress {
+    margin: 2px;
+}
+
+.loading {
+    display: flex;
+}
+
+.loading img {
+    margin: 2px;
+    width: 18px;
+    height: 20px;
+}
+
+#fileImage {
+    font-size: 20px;
+}
+
+#imegeForm {
+    display: none;
+}
