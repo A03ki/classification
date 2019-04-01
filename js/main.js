@@ -39,6 +39,8 @@ const classification = new Vue({
             const imageData = getImageData(drawElement);
             const accuracyScores = getAccuracyScores(imageData, model);
             const classRanking = putTopN(accuracyScores, 10);
+            const SmoothGrad = applySmoothGrad(imageData, model, 0.2, 100);
+            console.log(SmoothGrad);
             classBar.isGetingRnak = true;
             classRanking.forEach((val, idx) => {
                 classBar.names[idx].message = ImageNet1000Class[val.index];
@@ -168,3 +170,38 @@ const putTopN = (array, n) => {
     });
         return hoge.slice(0, n);
 };
+
+
+const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
+    const gradList = [];
+    const channels = 3;
+    const visualization = tf.tidy(() => {
+        let input = tf.fromPixels(imageData, channels);
+        input = tf.reverse(input, 2);  // RGB to BGR
+        input = tf.cast(input, 'float32');
+        console.log(model)
+        for (let i = 0; i < sampleSize; i++) {
+            const noize = tf.randomNormal([224, 224, 3], 0, 255*noizeLevel, 'float32');
+            let inputNoize = input.add(noize);
+            inputNoize = tf.variable(inputNoize);
+            console.log(inputNoize);
+            const f = x => model.predict(x);
+            const g = tf.grad(f);
+            g(inputNoize.expandDims()).print();
+            const output = model.predict(input.expandDims());
+            console.log(output);
+            const label = tf.oneHot(tf.tensor1d([output.argMax()], 'float32'), 1000);
+            const loss = tf.losses.softmaxCrossEntropy(label, output)
+            //const g = tf.grad(loss);
+            gradList.push(g(inputNoize));
+        }
+        gradImageData = tf.squeeze(tf.tensor1d(gradList).abs().max(2).mean(0));
+        return gradImageData.dataSync();
+    });
+    return visualization;
+}
+
+const tfVisualization = () => {
+    const ImageData = gradImageData();
+    tf.toPixels(ImageData, cnvs);
+}
