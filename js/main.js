@@ -1,13 +1,13 @@
 import {ImageNet1000Class} from './imagenet1000.js';
 
-
 let model;
-tf.loadModel('./data/model/model.json')
-    .then(pretrainedModel => {
-        model = pretrainedModel;
-    }).then(() => {
-        classification.offLoadingModel();
-    });
+
+const fetchData = async () => {
+    model = await tf.loadLayersModel('./data/model/model.json');
+    classification.offLoadingModel();
+};
+
+fetchData();
 
 
 const userAgent = window.navigator.userAgent.toLowerCase();
@@ -150,7 +150,7 @@ const getImageData = (drawElement) => {  // resize
 const getAccuracyScores = (imageData, model) => {
     const score = tf.tidy(() => {
         const channels = 3;
-        let input = tf.fromPixels(imageData, channels);
+        let input = tf.browser.fromPixels(imageData, channels);
         input = tf.reverse(input, 2);  // RGB to BGR
         input = tf.cast(input, 'float32');
         input = input.expandDims();
