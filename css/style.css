@@ -14,8 +14,21 @@ table td {
 #classBar {
     margin-top : 15px;
 }
+
 .progress {
     margin: 2px;
+}
+
+.flex {
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flex;
+    display: -o-flex;
+    display: flex;
+}
+
+.flex button {
+    margin-left: 3px;
 }
 
 .loading {
