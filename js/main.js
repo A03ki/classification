@@ -1,10 +1,12 @@
 import {ImageNet1000Class} from './imagenet1000.js';
 
+
 let model;
+
 
 const fetchData = async () => {
     model = await tf.loadLayersModel('./data/model/model.json');
-    classification.offLoadingModel();
+    visualGroup.offLoadingModel();
 };
 
 fetchData();
@@ -21,26 +23,24 @@ if(userAgent.indexOf('msie') != -1 || userAgent.indexOf('trident') != -1) {
     };
 
 
-const classification = new Vue({
-    el: '#classification',
+const visualGroup = new Vue({
+    el: '#visualGroup',
     data: {
         isLoadingModel: true,
         isSetingImg: false
     },
     methods: {
-        offLoadingModel() {
+        offLoadingModel () {
             this.isLoadingModel = false;
         },
-        onClassification() {
+        onClassification () {
             this.isSetingImg = true;
         },
-        serClassBar() {
+        setClassBar () {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
             const accuracyScores = getAccuracyScores(imageData, model);
             const classRanking = putTopN(accuracyScores, 10);
-            const SmoothGrad = applySmoothGrad(imageData, model, 0.2, 100);
-            console.log(SmoothGrad);
             classBar.isGetingRnak = true;
             classRanking.forEach((val, idx) => {
                 classBar.names[idx].message = ImageNet1000Class[val.index];
@@ -52,6 +52,42 @@ const classification = new Vue({
                 classBar.items[idx].message = `${val.value * 100}`;
                 classBar.styles[idx].width.width = `${val.value * 100}%`;
             });}, 1000);
+        },
+        setVisualisation () {
+            const drawElement = document.getElementById('cnvs');
+            const imageData = getImageData(drawElement);
+            setGradImg(imageData, model);
+        }
+    }
+});
+
+
+const smoothGrad = new Vue({
+    el: '#smoothGrad',
+    methods: {
+        applySmoothGrad (imageData, model, noizeLevel, sampleSize) {
+            let gradImageData = tf.zeros([1, 224, 224]);
+            let input = tf.browser.fromPixels(imageData, 3);
+            input = tf.reverse(input, 2);  // RGB to BGR
+            input = tf.cast(input, 'float32');
+            const predFunc = x => model.predict(x);
+            const noizeStd = 255*noizeLevel;
+            const visualization = tf.tidy(() => {
+                for (let i = 0; i < sampleSize; i++) {
+                    const noize = tf.randomNormal([1, 224, 224, 3], 0.0, noizeStd, 'float32');
+                    const inputNoize = input.add(noize);
+                    const target = predFunc(inputNoize).argMax(1);
+                    const label = tf.oneHot(target, 1000);
+                    const lossFunc = x => tf.losses.softmaxCrossEntropy(label, predFunc(x));
+                    const gradFunc = tf.grad(lossFunc);
+                    const gradient = gradFunc(inputNoize);
+                    gradImageData = gradImageData.add(gradient.abs().max(3));
+                }
+                gradImageData = gradImageData.div(tf.scalar(sampleSize));
+                gradImageData.print();
+                return tf.squeeze(gradImageData);
+            });
+            return visualization;
         }
     }
 });
@@ -83,7 +119,7 @@ const inputGroup = new Vue({
                     image.src = evt.target.result;
                 };
                 reader.readAsDataURL(file);
-                classification.onClassification();
+                visualGroup.onClassification();
             }
         }
     }
@@ -172,36 +208,20 @@ const putTopN = (array, n) => {
 };
 
 
-const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
-    const gradList = [];
-    const channels = 3;
-    const visualization = tf.tidy(() => {
-        let input = tf.fromPixels(imageData, channels);
-        input = tf.reverse(input, 2);  // RGB to BGR
-        input = tf.cast(input, 'float32');
-        console.log(model)
-        for (let i = 0; i < sampleSize; i++) {
-            const noize = tf.randomNormal([224, 224, 3], 0, 255*noizeLevel, 'float32');
-            let inputNoize = input.add(noize);
-            inputNoize = tf.variable(inputNoize);
-            console.log(inputNoize);
-            const f = x => model.predict(x);
-            const g = tf.grad(f);
-            g(inputNoize.expandDims()).print();
-            const output = model.predict(input.expandDims());
-            console.log(output);
-            const label = tf.oneHot(tf.tensor1d([output.argMax()], 'float32'), 1000);
-            const loss = tf.losses.softmaxCrossEntropy(label, output)
-            //const g = tf.grad(loss);
-            gradList.push(g(inputNoize));
-        }
-        gradImageData = tf.squeeze(tf.tensor1d(gradList).abs().max(2).mean(0));
-        return gradImageData.dataSync();
-    });
-    return visualization;
-}
+const setGradImg = async (imageData, model) => {
+    const cnvs =  document.getElementById('cnvs-sg');
+    cnvs.width = 224;
+    cnvs.height = 224;
+    let gradImgData = smoothGrad.applySmoothGrad(imageData, model, 0.2, 10);
+    gradImgData = minMaxNormalization(gradImgData);
+    gradImgData.max().print();
+    await tf.browser.toPixels(gradImgData, cnvs);
+};
 
-const tfVisualization = () => {
-    const ImageData = gradImageData();
-    tf.toPixels(ImageData, cnvs);
+
+const minMaxNormalization = (imageData) => {
+    const dataMax = imageData.max();
+    const dataMin = imageData.min();
+    const normed = imageData.sub(dataMin).div(dataMax.sub(dataMin));
+    return normed
 }
