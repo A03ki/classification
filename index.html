@@ -25,18 +25,25 @@
         <input type="text" class="form-control" readonly="" :value="message">
     </div>
     <hr>
-    <div id='classification' v-cloak>
-        <div v-show="isSetingImg">
-            <h3>プレビュー</h3>
-            <canvas id="cnvs"></canvas>
+    <div id="visualGroup" v-cloak>
+        <div class="flex" v-show="isSetingImg">
+            <div>
+                <h3>プレビュー</h3>
+                <canvas id="cnvs"></canvas>
+            </div>
+            <div>
+                <h3>可視化</h3>
+                <canvas id="cnvs-sg"></canvas>
+            </div>
         </div>
         <hr v-show="isSetingImg">
         <div v-show="isLoadingModel" class="loading">
             <img src="./data/loading.gif">
             <p>Now loading model: ResNet50</p>
         </div>
-        <div v-show="isSetingImg && !isLoadingModel">
-            <button type="button" class="btn btn-primary" v-on:click="serClassBar">Classification</button>
+        <div class="flex" v-show="isSetingImg && !isLoadingModel">
+            <button type="button" class="btn btn-primary" v-on:click="setClassBar">Classification</button>
+            <button type="button" class="btn btn-primary" v-on:click="setVisualisation">Visualisation</button>
         </div>
     </div>
     <div id="classBar" v-cloak>
