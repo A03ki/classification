@@ -39,7 +39,8 @@ const visualGroup = new Vue({
         setClassBar () {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
-            const accuracyScores = getAccuracyScores(imageData, model);
+            const input = applyPreprocessing(imageData);
+            const accuracyScores = model.predict(input).dataSync();
             const classRanking = putTopN(accuracyScores, 10);
             classBar.isGetingRnak = true;
             classRanking.forEach((val, idx) => {
@@ -66,11 +67,9 @@ const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
     const noizeStd = 255*noizeLevel;
     const visualization = tf.tidy(() => {
         let gradImageData = tf.zeros([1, 224, 224]);
-        let inputs = tf.browser.fromPixels(imageData, 3);  // 224, 224, 3
-        inputs = tf.reverse(inputs, 2);  // RGB to BGR
-        inputs = tf.cast(inputs, 'float32');
-        const noize = tf.randomNormal([sampleSize, 224, 224, 3], 0.0, noizeStd, 'float32');
-        inputs = noize.add(inputs);
+        const noize = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,
+                                      noizeStd, 'float32');
+        const inputs = noize.add(applyPreprocessing(imageData));
         const predFunc = x => model.predict(x);
         const lossFunc = (x, y) => tf.losses.softmaxCrossEntropy(y, predFunc(x));
         const targets = predFunc(inputs).argMax(0);
@@ -179,16 +178,16 @@ const getImageData = (drawElement) => {  // resize
 }
 
 
-const getAccuracyScores = (imageData, model) => {
-    const score = tf.tidy(() => {
-        const channels = 3;
+const applyPreprocessing = (imageData) => {
+    const channels = 3;
+    const output = tf.tidy(() => {
         let input = tf.browser.fromPixels(imageData, channels);
         input = tf.reverse(input, 2);  // RGB to BGR
         input = tf.cast(input, 'float32');
         input = input.expandDims();
-        return model.predict(input).dataSync();
+        return input
     });
-    return score;
+    return output;
 }
 
 
