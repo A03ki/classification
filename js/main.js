@@ -62,36 +62,31 @@ const visualGroup = new Vue({
 });
 
 
-const smoothGrad = new Vue({
-    el: '#smoothGrad',
-    methods: {
-        applySmoothGrad (imageData, model, noizeLevel, sampleSize) {
-            const noizeStd = 255*noizeLevel;
-            const visualization = tf.tidy(() => {
-                let gradImageData = tf.zeros([1, 224, 224]);
-                let inputs = tf.browser.fromPixels(imageData, 3);
-                inputs = tf.reverse(inputs, 2);  // RGB to BGR
-                inputs = tf.cast(inputs, 'float32');
-                const noize = tf.randomNormal([sampleSize, 224, 224, 3], 0.0, noizeStd, 'float32');
-                inputs = noize.add(inputs);
-                const predFunc = x => model.predict(x);
-                const lossFunc = (x, y) => tf.losses.softmaxCrossEntropy(y, predFunc(x));
-                const targets = predFunc(inputs).argMax(0);
-                const labels = tf.oneHot(targets, 1000);
-                const gradFunc = tf.grads(lossFunc);
-                for (let i = 0; i < sampleSize; i++) {
-                    const label = labels.slice([i, 0], [1, 1000]);
-                    const input = inputs.slice([i, 0], [1, 224, 224, 3]);
-                    const [gradient, _] = gradFunc([input, label]);
-                    gradImageData = gradImageData.add(gradient.abs().max(3));
-                }
-                gradImageData = gradImageData.div(tf.scalar(sampleSize));
-                return tf.squeeze(gradImageData);
-            });
-            return visualization;
+const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
+    const noizeStd = 255*noizeLevel;
+    const visualization = tf.tidy(() => {
+        let gradImageData = tf.zeros([1, 224, 224]);
+        let inputs = tf.browser.fromPixels(imageData, 3);  // 224, 224, 3
+        inputs = tf.reverse(inputs, 2);  // RGB to BGR
+        inputs = tf.cast(inputs, 'float32');
+        const noize = tf.randomNormal([sampleSize, 224, 224, 3], 0.0, noizeStd, 'float32');
+        inputs = noize.add(inputs);
+        const predFunc = x => model.predict(x);
+        const lossFunc = (x, y) => tf.losses.softmaxCrossEntropy(y, predFunc(x));
+        const targets = predFunc(inputs).argMax(0);
+        const labels = tf.oneHot(targets, 1000);
+        const gradFunc = tf.grads(lossFunc);
+        for (let i = 0; i < sampleSize; i++) {
+            const label = labels.slice([i, 0], [1, 1000]);
+            const input = inputs.slice([i, 0], [1, 224, 224, 3]);
+            const [gradient, _] = gradFunc([input, label]);
+            gradImageData = gradImageData.add(gradient.abs().max(3));
         }
-    }
-});
+        gradImageData = gradImageData.div(tf.scalar(sampleSize));
+        return tf.squeeze(gradImageData);
+    });
+    return visualization;
+}
 
 
 const inputGroup = new Vue({
@@ -213,7 +208,7 @@ const setGradImg = async (imageData, model) => {
     const cnvs =  document.getElementById('cnvs-sg');
     cnvs.width = 224;
     cnvs.height = 224;
-    let gradImgData = smoothGrad.applySmoothGrad(imageData, model, 0.2, 20);
+    let gradImgData = applySmoothGrad(imageData, model, 0.2, 20);
     gradImgData = minMaxNormalization(gradImgData);
     await tf.browser.toPixels(gradImgData, cnvs);
 };
