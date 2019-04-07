@@ -57,7 +57,7 @@ const visualGroup = new Vue({
         setVisualisation () {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
-            setGradImg(imageData, model);
+            writeGradImg(imageData, model);
         }
     }
 });
@@ -203,7 +203,7 @@ const putTopN = (array, n) => {
 };
 
 
-const setGradImg = async (imageData, model) => {
+const writeGradImg = async (imageData, model) => {
     const cnvs =  document.getElementById('cnvs-sg');
     cnvs.width = 224;
     cnvs.height = 224;
