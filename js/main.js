@@ -213,9 +213,10 @@ const writeGradImg = async (imageData, model) => {
 };
 
 
-const minMaxNormalization = (imageData) => {
+const minMaxNormalization = (imageData, range=[0, 1]) => {  // range[0]~range[1]にScaling
     const dataMax = imageData.max();
     const dataMin = imageData.min();
-    const normed = imageData.sub(dataMin).div(dataMax.sub(dataMin));
+    let normed = imageData.sub(dataMin).div(dataMax.sub(dataMin));
+    normed = normed.mul(tf.tensor(range[1] - range[0])).add(tf.tensor(range[0]));
     return normed
 }
