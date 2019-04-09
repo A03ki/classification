@@ -178,11 +178,11 @@ const getImageData = (drawElement) => {  // resize
 }
 
 
-const applyPreprocessing = (imageData) => {
+const applyPreprocessing = (imageData, rgb2bgr=true) => {
     const channels = 3;
     const output = tf.tidy(() => {
         let input = tf.browser.fromPixels(imageData, channels);
-        input = tf.reverse(input, 2);  // RGB to BGR
+        if (rgb2bgr) input = tf.reverse(input, 2);  // RGB to BGR
         input = tf.cast(input, 'float32');
         input = input.expandDims();
         return input
