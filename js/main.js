@@ -90,6 +90,16 @@ const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
 
 const inputGroup = new Vue({
     el: '#inputGroup',
+    template: `<div class="input-group mb-3">
+                <label class="input-group-prepend">
+                        <div class="btn btn-primary">
+                            <i class="fas fa-folder-open" id="fileImage"></i>
+                            Choose File
+                            <input id="imegeForm" type="file" accept="image/jpeg,image/png" @change="readFile($event)">
+                        </div>
+                </label>
+              <input type="text" class="form-control" readonly="" :value="message">
+              </div>`,
     data: {
         message: "画像を選択してください"
     },
