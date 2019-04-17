@@ -263,3 +263,49 @@ const loading = new Vue( {
     }
 } );
 
+
+const selectModel = new Vue( {
+    el: '#selectModel',
+    template: `<div class="btn-group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Model
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" v-bind:class="{ active: isActiveMobilenet, disabled : isDisabled }" v-on:click="setMobilenet">Mobilenet</a>
+                    <a class="dropdown-item" v-bind:class="{ active: isActiveResNet50, disabled : isDisabled }" v-on:click="setResnet50">ResNet50</a>
+                </div>
+               </div>`,
+    data: {
+        isActiveMobilenet: true,
+        isActiveResNet50: false,
+        isDisabled: false
+    },
+    methods: {
+        setMobilenet(){
+            if (this.isActiveMobilenet===false) {
+                this.swapCondition();
+            };
+            model = mobilenet;
+        },
+        setResnet50(){
+            if (this.isActiveResNet50===false) {
+                this.swapCondition();
+            };
+            if (resnet50 === undefined) {
+                this.isDisabled = true;  // 何回も読み込ませないように選択できなくする
+                loading.message = "model: ResNet50";
+                loading.onLoading();
+                (async () => {
+                    resnet50 = await tf.loadLayersModel('./data/model/model.json');
+                    model = resnet50;
+                    this.isDisabled = false;
+                    loading.offLoading();
+                })();
+            }
+            model = resnet50;
+        },
+        swapCondition(){
+            [this.isActiveMobilenet, this.isActiveResNet50] = [this.isActiveResNet50, this.isActiveMobilenet];
+        }
+    }
+} );
