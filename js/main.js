@@ -241,3 +241,25 @@ const minMaxNormalization = (imageData, range=[0, 1]) => {  // range[0]~range[1]
     normed = normed.mul(tf.tensor(range[1] - range[0])).add(tf.tensor(range[0]));
     return normed
 }
+
+
+const loading = new Vue( {
+    el: '#loading',
+    template: `<div v-show="isLoading" class="loading">
+                <img src="./data/loading.gif">
+                <p>Now loading {{message}}</p>
+            </div>`,
+    data: {
+        isLoading: true,
+        message: "model: Mobilenet"
+    },
+    methods: {
+        onLoading () {
+            this.isLoading = true;
+        },
+        offLoading () {
+            this.isLoading = false;
+        },
+    }
+} );
+
