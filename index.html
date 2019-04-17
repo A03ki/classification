@@ -29,15 +29,13 @@
             </div>
         </div>
         <hr v-show="isSetingImg">
-        <div v-show="isLoadingModel" class="loading">
-            <img src="./data/loading.gif">
-            <p>Now loading model: ResNet50</p>
         </div>
         <div class="flex" v-show="isSetingImg && !isLoadingModel">
             <button type="button" class="btn btn-primary" v-on:click="setClassBar">Classification</button>
             <button type="button" class="btn btn-primary" v-on:click="setVisualisation">Visualisation</button>
         </div>
     </div>
+        <div id="loading"></div>
     </div>
     <div id="classBar"></div>
     <script type="module" src="js/main.js"></script>

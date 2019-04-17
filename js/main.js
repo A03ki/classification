@@ -62,7 +62,12 @@ const visualGroup = new Vue({
         setVisualisation () {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
-            writeGradImg(imageData, model);
+            loading.message = "visualisation: SmoothGrad"
+            loading.onLoading();
+            setTimeout(() => {
+                writeGradImg(imageData, model);
+                loading.offLoading();
+            }, 100);
         }
     }
 });
