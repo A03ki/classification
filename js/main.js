@@ -14,12 +14,10 @@ fetchData();
 
 const userAgent = window.navigator.userAgent.toLowerCase();
 
-if(userAgent.indexOf('msie') != -1 || userAgent.indexOf('trident') != -1) {
+if (userAgent.indexOf('msie') != -1 || userAgent.indexOf('trident') != -1) {
         alert('Internet Explorerは対応していません');
-    } else if(userAgent.indexOf('edge') != -1) {
+    } else if (userAgent.indexOf('edge') != -1) {
         alert('Edgeは対応していません');
-    } else if(userAgent.indexOf('safari') != -1　&& userAgent.indexOf('chrome') === -1) {
-        alert('Safariは対応していません');
     };
 
 
