@@ -18,23 +18,15 @@
     <div id="inputGroup"></div>
     <hr>
     <div id="visualGroup" v-cloak>
-        <div class="flex" v-show="isSetingImg">
-            <div>
-                <h3>プレビュー</h3>
-                <canvas id="cnvs"></canvas>
+        <div v-show="isSetingImg">
+            <div id="canvasGroup"></div>
+            <hr>
+            <div class="flex">
+                <div id="selectModel"></div>
+                <button type="button" class="btn btn-primary" v-on:click="setClassBar">Classification</button>
+                <button type="button" class="btn btn-primary" v-on:click="setVisualisation">Visualisation</button>
             </div>
-            <div>
-                <h3>可視化</h3>
-                <canvas id="cnvs-sg"></canvas>
-            </div>
         </div>
-        <hr v-show="isSetingImg">
-        </div>
-        <div class="flex" v-show="isSetingImg && !isLoadingModel">
-            <button type="button" class="btn btn-primary" v-on:click="setClassBar">Classification</button>
-            <button type="button" class="btn btn-primary" v-on:click="setVisualisation">Visualisation</button>
-        </div>
-    </div>
         <div id="loading"></div>
     </div>
     <div id="classBar"></div>

@@ -25,13 +25,9 @@ if (userAgent.indexOf('msie') != -1 || userAgent.indexOf('trident') != -1) {
 const visualGroup = new Vue({
     el: '#visualGroup',
     data: {
-        isLoadingModel: true,
         isSetingImg: false
     },
     methods: {
-        offLoadingModel () {
-            this.isLoadingModel = false;
-        },
         onClassification () {
             this.isSetingImg = true;
         },
@@ -103,6 +99,20 @@ const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
     return visualization;
 }
 
+
+const canvasGroup = new Vue({
+    el: "#canvasGroup",
+    template: `<div class="flex">
+                <div>
+                    <h3>プレビュー</h3>
+                    <canvas id="cnvs"></canvas>
+                </div>
+                <div>
+                    <h3>可視化</h3>
+                    <canvas id="cnvs-sg"></canvas>
+                </div>
+               </div>`
+});
 
 const inputGroup = new Vue({
     el: '#inputGroup',
