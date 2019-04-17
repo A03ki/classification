@@ -2,14 +2,15 @@ import {ImageNet1000Class} from './imagenet1000.js';
 
 
 let model;
+let mobilenet;
+let resnet50 = undefined;
 
 
-const fetchData = async () => {
-    model = await tf.loadLayersModel('./data/model/model.json');
-    visualGroup.offLoadingModel();
-};
-
-fetchData();
+(async () => {
+    mobilenet = await tf.loadLayersModel('https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json');
+    model = mobilenet;
+    loading.offLoading();
+})();
 
 
 const userAgent = window.navigator.userAgent.toLowerCase();
@@ -37,7 +38,13 @@ const visualGroup = new Vue({
         setClassBar () {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
-            const input = applyPreprocessing(imageData);
+            let input;
+            if (model===mobilenet) {
+                input  = applyPreprocessing(imageData, false);
+                input = minMaxNormalization(input, [-1, 1]);
+            } else {  // ResNet50
+                input = applyPreprocessing(imageData);
+            };
             const accuracyScores = model.predict(input).dataSync();
             const classRanking = putTopN(accuracyScores, 10);
             classBar.isGetingRnak = true;
@@ -62,12 +69,18 @@ const visualGroup = new Vue({
 
 
 const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
-    const noizeStd = 255*noizeLevel;
     const visualization = tf.tidy(() => {
         let gradImageData = tf.zeros([1, 224, 224]);
-        const noize = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,
-                                      noizeStd, 'float32');
-        const inputs = noize.add(applyPreprocessing(imageData));
+        let inputs;
+        if (model===mobilenet) {  // Mobilenet require RGB and scaling `-1~1`
+            inputs = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,  // noize
+                                     1.0*noizeLevel, 'float32');
+            inputs = inputs.add(minMaxNormalization(applyPreprocessing(imageData, false), [-1, 1]));
+        } else {  // ResNet50
+            inputs = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,
+                                     255*noizeLevel, 'float32');
+            inputs = inputs.add(applyPreprocessing(imageData));
+        };
         const predFunc = x => model.predict(x);
         const lossFunc = (x, y) => tf.losses.softmaxCrossEntropy(y, predFunc(x));
         const targets = predFunc(inputs).argMax(0);
