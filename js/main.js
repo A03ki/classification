@@ -144,6 +144,30 @@ const inputGroup = new Vue({
 
 const classBar = new Vue({
     el: '#classBar',
+    template: `<div v-cloak>
+                <table class="table" v-show="isGetingRnak">
+                    <thead>
+                        <tr>
+                            <th width="25%">Label</th>
+                            <th width="75%">Probability</th>
+                        </tr>
+                    </thead>
+                <tbody v-for="(style, index) in styles">
+                    <tr>
+                        <td>
+                            {{ names[index].message }}
+                        </td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" v-bind:style="style.width">
+                                    {{ items[index].message }}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+                </table>
+               </div>`,
     data: {
         isGetingRnak: false,
         names: [
