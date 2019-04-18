@@ -28,10 +28,10 @@ const visualGroup = new Vue({
         isSetingImg: false
     },
     methods: {
-        onClassification () {
+        onClassification() {
             this.isSetingImg = true;
         },
-        setClassBar () {
+        setClassBar() {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
             let input;
@@ -55,10 +55,10 @@ const visualGroup = new Vue({
                 classBar.styles[idx].width.width = `${val.value * 100}%`;
             });}, 1000);
         },
-        setVisualisation () {
+        setVisualisation() {
             const drawElement = document.getElementById('cnvs');
             const imageData = getImageData(drawElement);
-            loading.message = "visualisation: SmoothGrad"
+            loading.message = "visualisation: SmoothGrad";
             loading.onLoading();
             setTimeout(() => {
                 writeGradImg(imageData, model);
@@ -67,37 +67,6 @@ const visualGroup = new Vue({
         }
     }
 });
-
-
-const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
-    const visualization = tf.tidy(() => {
-        let gradImageData = tf.zeros([1, 224, 224]);
-        let inputs;
-        if (model===mobilenet) {  // Mobilenet require RGB and scaling `-1~1`
-            inputs = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,  // noize
-                                     1.0*noizeLevel, 'float32');
-            inputs = inputs.add(minMaxNormalization(applyPreprocessing(imageData, false), [-1, 1]));
-        } else {  // ResNet50
-            inputs = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,
-                                     255*noizeLevel, 'float32');
-            inputs = inputs.add(applyPreprocessing(imageData));
-        };
-        const predFunc = x => model.predict(x);
-        const lossFunc = (x, y) => tf.losses.softmaxCrossEntropy(y, predFunc(x));
-        const targets = predFunc(inputs).argMax(0);
-        const labels = tf.oneHot(targets, 1000);
-        const gradFunc = tf.grads(lossFunc);
-        for (let i = 0; i < sampleSize; i++) {
-            const label = labels.slice([i, 0], [1, 1000]);
-            const input = inputs.slice([i, 0], [1, 224, 224, 3]);
-            const [gradient, _] = gradFunc([input, label]);
-            gradImageData = gradImageData.add(gradient.abs().max(3));
-        }
-        gradImageData = gradImageData.div(tf.scalar(sampleSize));
-        return tf.squeeze(gradImageData);
-    });
-    return visualization;
-}
 
 
 const canvasGroup = new Vue({
@@ -113,6 +82,7 @@ const canvasGroup = new Vue({
                 </div>
                </div>`
 });
+
 
 const inputGroup = new Vue({
     el: '#inputGroup',
@@ -132,7 +102,7 @@ const inputGroup = new Vue({
     methods: {
         readFile (event) {
             const files = event.target.files;
-            if(files.length > 0) {
+            if (files.length > 0) {
                 const file = files[0];
                 this.message = files[0].name;
                 const canvas = document.getElementById("cnvs");
@@ -151,7 +121,75 @@ const inputGroup = new Vue({
                 };
                 reader.readAsDataURL(file);
                 visualGroup.onClassification();
-            }
+            };
+        }
+    }
+});
+
+
+const loading = new Vue( {
+    el: '#loading',
+    template: `<div v-show="isLoading" class="loading">
+                <img src="./data/loading.gif">
+                <p>Now loading {{message}}</p>
+            </div>`,
+    data: {
+        isLoading: true,
+        message: "model: Mobilenet"
+    },
+    methods: {
+        onLoading() {
+            this.isLoading = true;
+        },
+        offLoading() {
+            this.isLoading = false;
+        },
+    }
+});
+
+
+const selectModel = new Vue( {
+    el: '#selectModel',
+    template: `<div class="btn-group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Model
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" v-bind:class="{ active: isActiveMobilenet, disabled : isDisabled }" v-on:click="setMobilenet">Mobilenet</a>
+                    <a class="dropdown-item" v-bind:class="{ active: isActiveResNet50, disabled : isDisabled }" v-on:click="setResnet50">ResNet50</a>
+                </div>
+               </div>`,
+    data: {
+        isActiveMobilenet: true,
+        isActiveResNet50: false,
+        isDisabled: false
+    },
+    methods: {
+        setMobilenet() {
+            if (this.isActiveMobilenet===false) {
+                this.swapCondition();
+            };
+            model = mobilenet;
+        },
+        setResnet50() {
+            if (this.isActiveResNet50===false) {
+                this.swapCondition();
+            };
+            if (resnet50 === undefined) {
+                this.isDisabled = true;  // 何回も読み込ませないように選択できなくする
+                loading.message = "model: ResNet50";
+                loading.onLoading();
+                (async () => {
+                    resnet50 = await tf.loadLayersModel('./data/model/model.json');
+                    model = resnet50;
+                    this.isDisabled = false;
+                    loading.offLoading();
+                })();
+            };
+            model = resnet50;
+        },
+        swapCondition() {
+            [this.isActiveMobilenet, this.isActiveResNet50] = [this.isActiveResNet50, this.isActiveMobilenet];
         }
     }
 });
@@ -245,10 +283,10 @@ const applyPreprocessing = (imageData, rgb2bgr=true) => {
         if (rgb2bgr) input = tf.reverse(input, 2);  // RGB to BGR
         input = tf.cast(input, 'float32');
         input = input.expandDims();
-        return input
+        return input;
     });
     return output;
-}
+};
 
 
 const putTopN = (array, n) => {
@@ -263,11 +301,42 @@ const putTopN = (array, n) => {
 };
 
 
+const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
+    const visualization = tf.tidy(() => {
+        let gradImageData = tf.zeros([1, 224, 224]);
+        let inputs;
+        if (model===mobilenet) {  // Mobilenet require RGB and scaling `-1~1`
+            inputs = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,  // noize
+                                     1.0*noizeLevel, 'float32');
+            inputs = inputs.add(minMaxNormalization(applyPreprocessing(imageData, false), [-1, 1]));
+        } else {  // ResNet50
+            inputs = tf.randomNormal([sampleSize, 224, 224, 3], 0.0,
+                                     255*noizeLevel, 'float32');
+            inputs = inputs.add(applyPreprocessing(imageData));
+        };
+        const predFunc = x => model.predict(x);
+        const lossFunc = (x, y) => tf.losses.softmaxCrossEntropy(y, predFunc(x));
+        const targets = predFunc(inputs).argMax(0);
+        const labels = tf.oneHot(targets, 1000);
+        const gradFunc = tf.grads(lossFunc);
+        for (let i = 0; i < sampleSize; i++) {
+            const label = labels.slice([i, 0], [1, 1000]);
+            const input = inputs.slice([i, 0], [1, 224, 224, 3]);
+            const [gradient, _] = gradFunc([input, label]);
+            gradImageData = gradImageData.add(gradient.abs().max(3));
+        };
+        gradImageData = gradImageData.div(tf.scalar(sampleSize));
+        return tf.squeeze(gradImageData);
+    });
+    return visualization;
+};
+
+
 const writeGradImg = async (imageData, model) => {
     const cnvs =  document.getElementById('cnvs-sg');
     cnvs.width = 224;
     cnvs.height = 224;
-    let gradImgData = applySmoothGrad(imageData, model, 0.2, 20);
+    let gradImgData = applySmoothGrad(imageData, model, 0.2, 50);
     gradImgData = minMaxNormalization(gradImgData);
     await tf.browser.toPixels(gradImgData, cnvs);
 };
@@ -278,73 +347,5 @@ const minMaxNormalization = (imageData, range=[0, 1]) => {  // range[0]~range[1]
     const dataMin = imageData.min();
     let normed = imageData.sub(dataMin).div(dataMax.sub(dataMin));
     normed = normed.mul(tf.tensor(range[1] - range[0])).add(tf.tensor(range[0]));
-    return normed
-}
-
-
-const loading = new Vue( {
-    el: '#loading',
-    template: `<div v-show="isLoading" class="loading">
-                <img src="./data/loading.gif">
-                <p>Now loading {{message}}</p>
-            </div>`,
-    data: {
-        isLoading: true,
-        message: "model: Mobilenet"
-    },
-    methods: {
-        onLoading () {
-            this.isLoading = true;
-        },
-        offLoading () {
-            this.isLoading = false;
-        },
-    }
-} );
-
-
-const selectModel = new Vue( {
-    el: '#selectModel',
-    template: `<div class="btn-group">
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Model
-                </button>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" v-bind:class="{ active: isActiveMobilenet, disabled : isDisabled }" v-on:click="setMobilenet">Mobilenet</a>
-                    <a class="dropdown-item" v-bind:class="{ active: isActiveResNet50, disabled : isDisabled }" v-on:click="setResnet50">ResNet50</a>
-                </div>
-               </div>`,
-    data: {
-        isActiveMobilenet: true,
-        isActiveResNet50: false,
-        isDisabled: false
-    },
-    methods: {
-        setMobilenet(){
-            if (this.isActiveMobilenet===false) {
-                this.swapCondition();
-            };
-            model = mobilenet;
-        },
-        setResnet50(){
-            if (this.isActiveResNet50===false) {
-                this.swapCondition();
-            };
-            if (resnet50 === undefined) {
-                this.isDisabled = true;  // 何回も読み込ませないように選択できなくする
-                loading.message = "model: ResNet50";
-                loading.onLoading();
-                (async () => {
-                    resnet50 = await tf.loadLayersModel('./data/model/model.json');
-                    model = resnet50;
-                    this.isDisabled = false;
-                    loading.offLoading();
-                })();
-            }
-            model = resnet50;
-        },
-        swapCondition(){
-            [this.isActiveMobilenet, this.isActiveResNet50] = [this.isActiveResNet50, this.isActiveMobilenet];
-        }
-    }
-} );
+    return normed;
+};
