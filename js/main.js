@@ -324,6 +324,9 @@ const applySmoothGrad = (imageData, model, noizeLevel, sampleSize) => {
             const input = inputs.slice([i, 0], [1, 224, 224, 3]);
             const [gradient, _] = gradFunc([input, label]);
             gradImageData = gradImageData.add(gradient.abs().max(3));
+            label.dispose();
+            input.dispose();
+            gradient.dispose();
         };
         gradImageData = gradImageData.div(tf.scalar(sampleSize));
         return tf.squeeze(gradImageData);
